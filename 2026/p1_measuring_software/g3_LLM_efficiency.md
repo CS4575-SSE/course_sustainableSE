@@ -16,13 +16,13 @@ Large Language Models (LLMs) have been prominent for years, and users from diffe
 
 ## Background and Related Work
 
-The energy footprint of deep learning has received growing attention in recent years. Strubell et al. [2] demonstrated that training a single large NLP model can emit as much carbon as five automobiles over their lifetimes, sparking a broader discourse on sustainable AI. Patterson et al. [3] extended this analysis to large-scale language models, quantifying the carbon emissions associated with training models such as GPT-3 and T5. More recently, Luccioni et al. [4] estimated the carbon footprint of the BLOOM model across its full lifecycle.
+Strubell et al. [2] demonstrated that training a single large NLP model can emit as much carbon as five automobiles over their lifetimes, sparking discourse on sustainable AI. Patterson et al. [3] quantified the carbon emissions of training GPT-3 and T5, while Luccioni et al. [4] estimated the full lifecycle carbon footprint of BLOOM.
 
-While these studies focus predominantly on the *training* phase, the *inference* phase is increasingly recognised as a significant and growing contributor to total energy consumption, particularly as LLMs are deployed at scale. Desislavov et al. [5] surveyed compute and energy trends across deep learning and noted that inference costs can dominate over training when models serve millions of users. Yet, systematic measurements of how specific input characteristics — such as context window size — affect inference energy remain scarce. This gap is especially pronounced for local inference, where users run models on consumer hardware without access to the energy optimisations available in cloud data centres. User chat optimisation by providing context is an integral part of LLM usage, making the measurement of energy consumption across various context sizes more relevant than ever.
+These studies focus predominantly on the *training* phase, yet the *inference* phase is an increasingly significant contributor to total energy consumption. Desislavov et al. [5] noted that inference costs can dominate over training when models serve millions of users. However, systematic measurements of how input characteristics — such as context window size — affect inference energy remain scarce. This gap is especially pronounced for local inference, where users run models on consumer hardware without the energy optimisations of cloud data centres.
 
 ## Motivation
 
-Consider the following scenario: a student faces a difficult problem and wants to use an LLM to assist. Since the problem is part of a graded assignment, the student wants the best possible output. They must decide whether to provide no context, only the relevant lecture slides, or all slides from the entire course. The student may assume that providing more context will produce a better answer — but at what energy cost? The transformer architecture underlying modern LLMs employs a self-attention mechanism with quadratic computational complexity O(N²) with respect to sequence length [6]. This suggests that increasing context size should yield a super-linear increase in energy consumption. However, the actual energy profile on consumer hardware depends on additional factors including memory bandwidth, cache behaviour, and CPU-GPU data transfer overhead. Understanding these dynamics is essential for developers building local AI-powered tools and for users deciding how much context to provide.
+Consider a student facing a difficult graded assignment who wants to use an LLM for assistance. They must decide whether to provide no context, only relevant lecture slides, or the entire course material. The assumption is that more context yields better answers — but at what energy cost? The transformer self-attention mechanism has quadratic complexity O(N²) with respect to sequence length [6], suggesting that increasing context size yields a super-linear increase in energy. However, the actual energy profile on consumer hardware also depends on memory bandwidth, cache behaviour, and CPU-GPU data transfer overhead.
 
 ## Research Question and Hypotheses
 
@@ -37,11 +37,11 @@ We formulate two hypotheses:
 
 # Methodology
 
-We designated a specific system to measure the energy consumption of different context sizes, aiming to capture both CPU and GPU metrics. This section describes the steps taken to ensure consistent and reproducible results.
+We designated a specific system to measure energy consumption across different context sizes, capturing both CPU and GPU metrics.
 
 ## Hardware and Software Environment
 
-Our chosen LLM model is run in a locally controlled environment to gather unbiased energy data and eliminate variations due to using different machines. The hardware of the machine used for experiments:
+All experiments ran on a single dedicated machine to eliminate hardware variability:
 
 | Component | Specification |
 |-----------|--------------|
@@ -53,13 +53,13 @@ Our chosen LLM model is run in a locally controlled environment to gather unbias
 | GPU Power Monitoring | amd-smi |
 | LLM Runtime | LM Studio (daemon mode) |
 
-We ran the entire experiment in one execution to reduce external factors that could influence the results. Before conducting the experiment, all programs deemed non-essential were properly closed. We only kept bare-minimum operating system services, an ethernet connection, a terminal running our Python experiment, and LM Studio running the LLM model. The room temperature was kept approximately constant throughout the session.
+The entire experiment ran in one execution to reduce external factors. All non-essential programs were closed; only bare-minimum OS services, an ethernet connection, the experiment terminal, and LM Studio remained active. Room temperature was kept approximately constant.
 
 ## Model Selection and Context Configurations
 
-For our experiment, we use a single model to keep the experiment consistent. We wanted a model with powerful reasoning and agentic capabilities to ensure it would reason with the provided context. Hence we selected **gpt-oss-20b** (11.28 GB), a model with full chain-of-thought reasoning that reflects contemporary LLM usage patterns. The model was loaded in LM Studio with a maximum context window of 30,000 tokens.
+We selected a single model for consistency: **gpt-oss-20b** (11.28 GB), which supports agentic capabilities and full chain-of-thought reasoning, reflecting contemporary LLM usage. The model was loaded in LM Studio with a maximum context window of 30,000 tokens.
 
-We fed the LLM with multiple-choice exam questions from CSE1305 (Algorithms and Data Structures) paired with course summary documents of varying length as context. Five context sizes were tested:
+The task consists of multiple-choice exam questions from CSE1305 (Algorithms and Data Structures) paired with course summaries of varying length. Five context sizes were tested:
 
 | Context Size | File Size | Description |
 |-------------|-----------|-------------|
@@ -80,7 +80,7 @@ The experiment was executed as a single automated session using the following pr
 
 ## Data Collection and Integrity
 
-To protect data integrity, we ensure that only unbiased data is generated and external factors have minimal influence on the measurements. Each of the 150 runs produced two output files: a CPU energy trace (CSV) and a GPU power log (CSV). We verified that every run produced a valid LLM response. For every context size, the experiment was repeated 30 times. The interleaved execution order and single-session design minimise the impact of environmental factors such as temperature drift.
+Each of the 150 runs produced two output files: a CPU energy trace (CSV) and a GPU power log (CSV). We verified that every run produced a valid LLM response. The 30 repetitions per context size, interleaved execution order, and single-session design minimise the impact of environmental factors such as temperature drift.
 
 # Results
 
@@ -90,93 +90,89 @@ We structure the results in four stages: data validation, statistical significan
 
 ### Normality Testing
 
-Before selecting an appropriate statistical test, we assessed the normality of the total CPU energy distribution for each context size using the Shapiro-Wilk test [8] at a significance level of α = 0.05. Figure 1 shows the histograms with kernel density estimation (KDE) overlays, and Figure 2 presents the corresponding Q-Q plots.
+We assessed normality of the total CPU energy distribution per context size using the Shapiro-Wilk test [8] at α = 0.05. Figure 1 shows histograms with KDE overlays; Figure 2 presents Q-Q plots.
 
 ![Figure 1: Normality check — Histograms with Shapiro-Wilk test results for each context size. The '+' symbol indicates failure to reject H₀ (normal), while no symbol indicates rejection (non-normal).](../img/p1_measuring_software/g3_LLM_efficiency/normality_histograms.png)
 
 ![Figure 2: Q-Q plots comparing observed energy distributions against the theoretical normal distribution for each context size.](../img/p1_measuring_software/g3_LLM_efficiency/normality_qqplot.png)
 
-The Shapiro-Wilk test rejected normality for the 0k context size (W = 0.914, p = 0.019), the 10k size (W = 0.910, p = 0.028), and the 20k size (W = 0.970, p = 0.718 — though visual inspection of the Q-Q plot reveals tail deviations). The 2k (W = 0.935, p = 0.067) and 5k (W = 0.983, p = 0.906) groups did not reject normality. Given that multiple groups violate the normality assumption, we employ the non-parametric Mann-Whitney U test [9] for all pairwise comparisons to ensure consistency.
+Normality was rejected for the 0k (W = 0.914, p = 0.019) and 10k (W = 0.910, p = 0.028) groups, while the 2k (p = 0.067) and 5k (p = 0.906) groups did not reject normality. Since multiple groups violate the normality assumption, we employ the non-parametric Mann-Whitney U test [9] for all pairwise comparisons.
 
 ### Outlier Detection and Exclusion
 
-We applied both the interquartile range (IQR) method (1.5× IQR beyond Q1/Q3) and Z-score analysis (|Z| > 2) to identify anomalous measurements. Figure 3 shows the energy distribution per context size with outliers marked in red.
+We applied IQR (1.5×) and Z-score (|Z| > 2) methods to identify anomalous measurements. Figure 3 shows the energy distribution with outliers marked in red.
 
-![Figure 3: Energy distribution per context size with jittered data points. Red dots indicate outliers identified via the 1.5×IQR method.](../img/p1_measuring_software/g3_LLM_efficiency/outlier_boxplot.png)
+![Figure 3: Energy distribution per context size. Red dots indicate outliers beyond 1.5×IQR.](../img/p1_measuring_software/g3_LLM_efficiency/outlier_boxplot.png)
 
-Three runs were identified as severe outliers and excluded from subsequent analysis: `test_40_20k.csv` (1,161 J, Z = 5.25), `test_95_20k.csv` (1,004 J, Z = 5.20), and `test_94_10k.csv` (4,855 J, Z = 5.00). These measurements are an order of magnitude below their respective group medians (~21,700 J for 20k and ~11,450 J for 10k), suggesting premature run termination — likely due to out-of-memory conditions or silent LM Studio process failures at high context sizes. After exclusion, the clean dataset comprises 147 valid runs.
+Three severe outliers were excluded: `test_40_20k.csv` (1,161 J, Z = 5.25), `test_95_20k.csv` (1,004 J, Z = 5.20), and `test_94_10k.csv` (4,855 J, Z = 5.00). These values fall an order of magnitude below their group medians, suggesting premature termination due to out-of-memory conditions or silent process failures. The clean dataset comprises 147 valid runs.
 
 ## Statistical Significance
 
-We performed pairwise Mann-Whitney U tests across all ten context-size combinations. Figure 4 displays the resulting p-value heatmap.
+Pairwise Mann-Whitney U tests were performed across all ten context-size combinations (Figure 4).
 
-![Figure 4: Pairwise p-value heatmap from Mann-Whitney U tests. Green cells indicate statistical significance at α = 0.05.](../img/p1_measuring_software/g3_LLM_efficiency/significance_matrix.png)
+![Figure 4: Pairwise p-value heatmap (Mann-Whitney U). Green = significant at α = 0.05.](../img/p1_measuring_software/g3_LLM_efficiency/significance_matrix.png)
 
-Every pairwise comparison yields a p-value below 6.68 × 10⁻¹¹, far exceeding the significance threshold of α = 0.05. This confirms that the energy consumption differences between all context sizes are highly statistically significant and not attributable to random variation.
+Every comparison yields p < 6.68 × 10⁻¹¹, confirming that all energy differences are highly statistically significant. To quantify the practical magnitude, we computed the Common Language Effect Size (CLES) [10] relative to the 0k baseline (Figure 5).
 
-To quantify the practical magnitude of these differences, we computed the Common Language Effect Size (CLES) [10] relative to the 0k baseline. Figure 5 presents the percentage change in mean energy and corresponding CLES values.
+![Figure 5: Percentage change in CPU energy and CLES values relative to the 0k baseline.](../img/p1_measuring_software/g3_LLM_efficiency/effect_size_summary.png)
 
-![Figure 5: Effect size analysis showing percentage change in CPU energy and CLES values relative to the 0k baseline.](../img/p1_measuring_software/g3_LLM_efficiency/effect_size_summary.png)
-
-The energy increase relative to the 0k baseline is +58.3% for 2k tokens, +172.3% for 5k, +437.4% for 10k, and +919.3% for 20k tokens. The CLES values are 0.950 (0k→2k) and 1.000 for all other comparisons, indicating that in virtually every case a randomly selected run at a larger context size consumed more energy than a randomly selected run at a smaller size. These results strongly support **H1**.
+Energy increases relative to 0k are: +58.3% (2k), +172.3% (5k), +437.4% (10k), and +919.3% (20k). CLES values are 0.950 (0k→2k) and 1.000 for all other comparisons — virtually every run at a larger context consumed more energy than any run at a smaller context. These results strongly support **H1**.
 
 ## Energy Consumption Trends
 
-Figure 6 presents the average total CPU energy consumption per context size, while Figure 7 provides a three-panel breakdown of total energy, average power, and energy-delay product (EDP).
+Figures 6 and 7 present the average total CPU energy, average power, and energy-delay product (EDP) per context size.
 
-![Figure 6: Average total CPU energy consumption by context window size with error bars indicating standard deviation.](../img/p1_measuring_software/g3_LLM_efficiency/energy_by_context_size.png)
+![Figure 6: Average total CPU energy by context window size.](../img/p1_measuring_software/g3_LLM_efficiency/energy_by_context_size.png)
 
-![Figure 7: Three-panel CPU energy analysis: (left) total energy, (centre) average power, (right) energy-delay product by context size.](../img/p1_measuring_software/g3_LLM_efficiency/energy_analysis.png)
+![Figure 7: Three-panel CPU analysis — total energy, average power, and EDP by context size.](../img/p1_measuring_software/g3_LLM_efficiency/energy_analysis.png)
 
-Total CPU energy increases from 2,218 J at 0k tokens to 21,697 J at 20k tokens — a 9.8× increase for a context that is, in effect, 20× larger. The growth pattern is clearly super-linear but sub-quadratic relative to context size, supporting **H2**.
+Total CPU energy increases from 2,218 J (0k) to 21,697 J (20k) — a 9.8× increase for a 20× larger context. The growth is clearly super-linear but sub-quadratic, supporting **H2**.
 
-A counterintuitive finding emerges in the average power panel: CPU power draw *decreases* from 46.8 W at 0k to 33.9 W at 20k tokens. Despite consuming nearly ten times more total energy, the processor operates at a lower average wattage during large-context inference. This apparent paradox is resolved by the EDP panel, which reveals an exponential increase from 107,929 J·s (0k) to 13,886,506 J·s (20k). Since EDP is the product of energy and execution time, the sharply rising EDP combined with decreasing power indicates that execution time increases dramatically — the processor spends more time at lower utilisation, suggesting a memory-bandwidth bottleneck rather than a compute-bound workload.
+A counterintuitive finding emerges: CPU power draw *decreases* from 46.8 W (0k) to 33.9 W (20k). Despite consuming ten times more total energy, the processor operates at lower average wattage. The EDP panel resolves this paradox, showing exponential growth from 107,929 J·s (0k) to 13,886,506 J·s (20k). Since EDP = energy × time, the rising EDP with decreasing power indicates that execution time increases dramatically — the processor spends more time at lower utilisation, suggesting a memory-bandwidth bottleneck.
 
 ## CPU versus GPU Observations
 
-Both CPU and GPU energy were recorded simultaneously during each inference run. Figures 8 and 9 compare the two components across context sizes.
+CPU and GPU energy were recorded simultaneously. Figures 8 and 9 compare both components.
 
-![Figure 8: CPU vs GPU comparison across three metrics: total energy, average power, and energy-delay product.](../img/p1_measuring_software/g3_LLM_efficiency/cpu_vs_gpu_energy.png)
+![Figure 8: CPU vs GPU — total energy, average power, and EDP.](../img/p1_measuring_software/g3_LLM_efficiency/cpu_vs_gpu_energy.png)
 
-![Figure 9: Side-by-side comparison of average power draw and energy-delay product for CPU and GPU.](../img/p1_measuring_software/g3_LLM_efficiency/power_edp.png)
+![Figure 9: CPU vs GPU average power and EDP comparison.](../img/p1_measuring_software/g3_LLM_efficiency/power_edp.png)
 
-The GPU consistently draws higher average power (~78–83 W) compared to the CPU (~34–47 W) and accumulates substantially more total energy across all context sizes. At 20k tokens, GPU total energy reaches 52,960 J versus the CPU's 21,697 J, and GPU EDP (33,884,695 J·s) is approximately 2.4× higher than CPU EDP. Notably, while CPU average power decreases with context size, GPU average power remains relatively stable around 80 W, suggesting the GPU maintains high power draw regardless of computational intensity — likely due to persistent VRAM activity and base power consumption.
+The GPU consistently draws higher power (~78–83 W vs CPU's ~34–47 W) and accumulates more total energy. At 20k tokens, GPU total energy reaches 52,960 J versus CPU's 21,697 J, with GPU EDP (33,884,695 J·s) approximately 2.4× higher. While CPU power decreases with context size, GPU power remains stable around 80 W — suggesting persistent VRAM activity regardless of computational intensity.
 
 # Discussion
 
 ## Non-Linear Energy Growth and Attention Complexity
 
-The +919% energy increase from 0k to 20k tokens is consistent with the quadratic computational complexity of the self-attention mechanism in transformer architectures [6]. In self-attention, each token attends to all other tokens in the sequence, yielding O(N²) time complexity with respect to sequence length N. However, the observed growth is super-linear but sub-quadratic: a 20× increase in context produces a 9.8× increase in energy rather than a 400× increase. This is because the attention computation is quadratic only over the context portion, while the prompt (exam questions) and generation phase remain approximately constant across conditions.
+The +919% energy increase is consistent with the quadratic complexity of transformer self-attention [6], where each token attends to all others in the sequence (O(N²)). However, observed growth is super-linear but sub-quadratic: a 20× increase in context produces a 9.8× energy increase rather than 400×. This is because attention is quadratic only over the context portion, while the prompt and generation phase remain constant across conditions.
 
 ## The Power Paradox: Memory Bandwidth Bottleneck
 
-The most counterintuitive finding is the decrease in average CPU power from 46.8 W to 33.9 W as context size increases. This phenomenon is consistent with the well-documented "memory wall" effect [11], where processor performance is limited by memory bandwidth rather than arithmetic throughput. During large-context inference, the model's key-value (KV) cache grows proportionally with sequence length, requiring frequent accesses to system DRAM. The CPU cores complete their arithmetic operations but then stall, waiting for data from memory. During these stall cycles, the processor draws less power. However, because the total number of stall cycles increases dramatically, overall execution time — and thus total energy — increases substantially. This memory-bound behaviour is characteristic of modern inference workloads, as noted by Ivanov et al. [12], who argued that data movement, not computation, dominates the cost of machine learning.
+The decrease in average CPU power from 46.8 W to 33.9 W with larger contexts is consistent with the "memory wall" effect [11]. During large-context inference, the key-value (KV) cache grows with sequence length, requiring frequent DRAM accesses. The CPU cores complete arithmetic quickly but stall waiting for memory, drawing less power during stalls. Because stall cycles increase dramatically, execution time — and total energy — rises substantially despite lower wattage. This memory-bound behaviour aligns with Ivanov et al. [12], who argued that data movement dominates the cost of machine learning.
 
 ## CPU versus GPU Efficiency in Local Inference
 
-The GPU's consistently higher energy consumption and EDP may appear surprising given that GPUs are widely regarded as more efficient for neural network computation. However, the gpt-oss-20b model is 11.28 GB, and while the RX 9070 XT has 16 GB of VRAM, the KV-cache for large context windows pushes total memory requirements beyond what fits in VRAM alone. This forces partial layer offloading between GPU VRAM and system RAM via the PCIe bus, introducing significant data transfer overhead. The GPU remains powered at approximately 80 W even while waiting for CPU-side computation or PCIe transfers, resulting in poor energy efficiency. This observation suggests that for local inference scenarios where the model exceeds available VRAM, a CPU-only configuration may be more energy-efficient.
+The GPU's higher energy consumption may seem surprising for a workload traditionally considered GPU-friendly. However, the 11.28 GB model combined with KV-cache growth at large context sizes can push total memory requirements beyond the 16 GB VRAM, forcing partial offloading to system RAM via PCIe. The GPU remains at ~80 W even while waiting for data transfers, resulting in poor efficiency. For local inference where models exceed VRAM, CPU-only configurations may be more energy-efficient.
 
 ## Outlier Analysis
 
-The three excluded measurements — two at 20k tokens and one at 10k — exhibited energy values an order of magnitude below their group medians. The most probable explanation is that these runs encountered out-of-memory conditions or silent LM Studio crashes, causing premature termination. The 20k context size is particularly susceptible because the combined model size (11.28 GB) plus the KV-cache for 20,000 tokens approaches the 32 GB system RAM limit. This highlights a practical concern: pushing context windows to hardware limits does not merely increase energy consumption — it introduces reliability failures.
+The three excluded runs showed energy values an order of magnitude below their group medians, most likely due to OOM conditions or silent LM Studio crashes causing premature termination. The 20k context is particularly susceptible as the model (11.28 GB) plus KV-cache approaches the 32 GB RAM limit. This highlights that pushing context windows to hardware limits not only increases energy but introduces reliability failures.
 
 ## Threats to Validity
 
-**Internal validity:** All experiments ran on a single machine in a single session, which eliminates inter-machine variability but means results may not replicate on other hardware. The GPU power monitoring via amd-smi operates at one-second granularity, which is coarser than EnergiBridge's millisecond-level CPU measurements and may miss short power spikes. Room temperature was approximately but not precisely controlled.
+**Internal validity:** All experiments ran on a single machine in one session, eliminating inter-machine variability but limiting replicability. GPU monitoring via amd-smi (1-second granularity) is coarser than EnergiBridge's millisecond-level CPU measurements. Room temperature was not precisely controlled.
 
-**External validity:** Results are specific to one model (gpt-oss-20b), one task type (multiple-choice questions), and one hardware configuration. Different models, quantisation levels, or task types (e.g., open-ended generation) may yield different energy profiles. Cloud inference with dedicated accelerators would likely show substantially different patterns.
+**External validity:** Results are specific to one model, one task type (MCQ), and one hardware configuration. Different models, quantisation levels, or open-ended generation tasks may yield different profiles.
 
-**Construct validity:** The EDP metric weights energy and time equally; alternative metrics may yield different conclusions. CPU energy counters occasionally exhibit wraparound, which was handled heuristically using a threshold-based correction.
+**Construct validity:** EDP weights energy and time equally; alternative metrics may yield different conclusions. CPU energy counter wraparound was handled via threshold-based correction.
 
 # Conclusion
 
-This study provides empirical evidence that context window size has a significant and non-linear impact on the energy consumption of local LLM inference. Both hypotheses are confirmed: increasing context from 0 to 20,000 tokens increases CPU energy consumption by +919% (H1), and the growth pattern is super-linear (H2), consistent with the quadratic complexity of transformer self-attention. All pairwise differences between context sizes are statistically significant (p < 6.68 × 10⁻¹¹) with near-perfect effect sizes (CLES ≥ 0.95).
+This study provides empirical evidence that context window size has a significant, non-linear impact on local LLM inference energy. Both hypotheses are confirmed: increasing context from 0 to 20k tokens increases CPU energy by +919% (H1), with super-linear growth (H2) consistent with transformer self-attention complexity. All pairwise differences are statistically significant (p < 6.68 × 10⁻¹¹, CLES ≥ 0.95).
 
-The counterintuitive decrease in average CPU power alongside rising total energy reveals that large-context inference is fundamentally memory-bound on consumer hardware, not compute-bound. Additionally, GPU energy consumption exceeded CPU energy by up to 2.4× in terms of EDP, attributable to partial VRAM offloading overhead.
+The decreasing average CPU power alongside rising total energy reveals that large-context inference is memory-bound on consumer hardware. GPU energy exceeded CPU by up to 2.4× EDP due to partial VRAM offloading overhead.
 
-These findings carry practical implications for developers and users of local AI tools. Rather than indiscriminately providing LLMs with maximum context, practitioners should adopt context management strategies such as Retrieval-Augmented Generation [1] to supply only the most relevant information. This not only reduces energy consumption but also mitigates reliability risks at high context sizes.
-
-Future work should extend this analysis to multiple models and hardware configurations, investigate the effect of quantisation on the energy–context relationship, and measure accuracy alongside energy to determine the optimal context size that balances output quality with energy efficiency.
+Practitioners should adopt context management strategies such as Retrieval-Augmented Generation [1] rather than indiscriminately maximising context. This reduces both energy consumption and reliability risks. Future work should extend this analysis to multiple models, hardware configurations, and quantisation levels, while measuring accuracy alongside energy to determine the optimal context-quality trade-off.
 
 # References
 
