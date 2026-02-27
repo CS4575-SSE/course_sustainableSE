@@ -5,7 +5,7 @@ title: "Comparing Local LLM Inference Energy Consumption"
 image: "img/p1_measuring_software/g3_LLM_efficiency/energy_by_context_size.png"
 date: 12/02/2026
 summary: |-
-    This study investigates how context window size affects the energy consumption of local LLM inference. Using a 20B-parameter model (gpt-oss-20b) with five context sizes (0, 2k, 5k, 10k, and 20k tokens), we conducted 150 automated runs and measured CPU and GPU energy. Results show a +919% increase in CPU energy from 0k to 20k tokens, with all pairwise differences statistically significant (p < 6.68e-11). Counterintuitively, average CPU power decreases with larger contexts, indicating a memory-bandwidth bottleneck rather than a compute-bound workload.
+    This study investigates how context window size affects the energy consumption of local LLM inference. Using a 20B-parameter model (gpt-oss-20b) with five context sizes (0, 2k, 5k, 10k, and 20k tokens), we conducted 150 automated runs and measured CPU and GPU energy. Results show a +919% increase in CPU energy from 0k to 20k tokens, with all pairwise differences statistically significant (p < 2.23e-09). Counterintuitively, average CPU power decreases with larger contexts, indicating a memory-bandwidth bottleneck rather than a compute-bound workload.
 identifier: p1_measuring_software_2026 # Do not change this
 all_projects_page: "../p1_measuring_software" # Do not change this
 ---
@@ -96,7 +96,7 @@ We assessed normality of the total CPU energy distribution per context size usin
 
 ![Figure 2: Q-Q plots comparing observed energy distributions against the theoretical normal distribution for each context size.](../img/p1_measuring_software/g3_LLM_efficiency/normality_qqplot.png)
 
-Normality was rejected for the 0k (W = 0.914, p = 0.019) and 10k (W = 0.910, p = 0.028) groups, while the 2k (p = 0.067) and 5k (p = 0.906) groups did not reject normality. Since multiple groups violate the normality assumption, we employ the non-parametric Mann-Whitney U test [9] for all pairwise comparisons.
+Normality was rejected for the 0k (W = 0.914, p = 0.019) and 10k (W = 0.919, p = 0.028) groups, while the 2k (p = 0.067), 5k (p = 0.906), and 20k (p = 0.718) groups did not reject normality. Since multiple groups violate the normality assumption, we employ the non-parametric Mann-Whitney U test [9] for all pairwise comparisons.
 
 ### Outlier Detection and Exclusion
 
@@ -112,7 +112,7 @@ Pairwise Mann-Whitney U tests were performed across all ten context-size combina
 
 ![Figure 4: Pairwise p-value heatmap (Mann-Whitney U). Green = significant at α = 0.05.](../img/p1_measuring_software/g3_LLM_efficiency/significance_matrix.png)
 
-Every comparison yields p < 6.68 × 10⁻¹¹, confirming that all energy differences are highly statistically significant. To quantify the practical magnitude, we computed the Common Language Effect Size (CLES) [10] relative to the 0k baseline (Figure 5).
+Every comparison yields p < 2.23 × 10⁻⁹, confirming that all energy differences are highly statistically significant. To quantify the practical magnitude, we computed the Common Language Effect Size (CLES) [10] relative to the 0k baseline (Figure 5).
 
 ![Figure 5: Percentage change in CPU energy and CLES values relative to the 0k baseline.](../img/p1_measuring_software/g3_LLM_efficiency/effect_size_summary.png)
 
@@ -168,7 +168,7 @@ The three excluded runs showed energy values an order of magnitude below their g
 
 # Conclusion
 
-This study provides empirical evidence that context window size has a significant, non-linear impact on local LLM inference energy. Both hypotheses are confirmed: increasing context from 0 to 20k tokens increases CPU energy by +919% (H1), with super-linear growth (H2) consistent with transformer self-attention complexity. All pairwise differences are statistically significant (p < 6.68 × 10⁻¹¹, CLES ≥ 0.95).
+This study provides empirical evidence that context window size has a significant, non-linear impact on local LLM inference energy. Both hypotheses are confirmed: increasing context from 0 to 20k tokens increases CPU energy by +919% (H1), with super-linear growth (H2) consistent with transformer self-attention complexity. All pairwise differences are statistically significant (p < 2.23 × 10⁻⁹, CLES ≥ 0.95).
 
 The decreasing average CPU power alongside rising total energy reveals that large-context inference is memory-bound on consumer hardware. GPU energy exceeded CPU by up to 2.4× EDP due to partial VRAM offloading overhead.
 
